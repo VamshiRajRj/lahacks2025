@@ -3,6 +3,20 @@ from datetime import datetime
 from typing import Dict, Optional, List
 
 
+# Define your models
+class RequestA(Model):
+    text: str
+
+class RequestB(Model):
+    image_url: str
+    text: str
+
+class Response(Model):
+    body: str
+    agent_address: str
+    time: str
+
+
 class BillItem(Model):
     name: str
     price: float

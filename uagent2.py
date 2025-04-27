@@ -10,6 +10,7 @@ from datetime import datetime
 import google.generativeai as genai
 from config import GEMINI_API_KEY
 
+
 genai.configure(api_key=GEMINI_API_KEY)
 
 my_second_agent = Agent(
@@ -17,6 +18,10 @@ my_second_agent = Agent(
     port = 5051,
     endpoint = ['http://localhost:5051/submit']
 )
+
+
+
+agent2_responses :  Dict[str, BillAnalysisResponse] = {}
 
 fund_agent_if_low(my_second_agent.wallet.address())
 
@@ -147,6 +152,7 @@ def parse_bill_items(bill_data: Dict) -> List[BillItem]:
 
 @my_second_agent.on_event('startup')
 async def startup_handler(ctx : Context):
+    agent2_responses = ctx.storage.get("agent2_responses") or {}
     ctx.logger.info(f'My name is {ctx.agent.name} and my address  is {ctx.agent.address}')
 
 @my_second_agent.on_message(model = BillAnalysisRequest)
@@ -177,7 +183,11 @@ async def message_handler(ctx: Context, sender : str, msg: BillAnalysisRequest):
                                     "processing_timestamp": datetime.now().isoformat()
                                 }
                         )
-                       await ctx.send(sender, response)
+                try:
+                    # ctx.storage.set("agent2_responses", json(agent2_responses))
+                    await ctx.send(sender, response)
+                except Exception as e:
+                    ctx.logger.error(f"Error sending response: {str(e)}")
             else:
                 ctx.logger.error("Failed to extract text from image")
         else:
