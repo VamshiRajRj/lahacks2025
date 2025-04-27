@@ -4,6 +4,7 @@ from model import BillAnalysisResponse
 from config import ASI1_API_KEY
 from uagents.setup import fund_agent_if_low
 import requests
+import json
 
 my_third_agent = Agent(
     name = 'My Third Agent',
@@ -164,7 +165,8 @@ async def startup_handler(ctx : Context):
 async def message_handler(ctx: Context, sender : str, msg: BillAnalysisResponse):
     print(f"Received message from {sender}: {msg}")
     call_asi1_response = await call_asi1(msg.items, "Split the bill fairly among charlie, bob and dave. Charlie is a vegetarian only. ")
-    print(f"ASI-1 response: {call_asi1_response}")
+    with open('output.json', 'w') as f:
+        json.dump(call_asi1_response, f, indent=2)
 
 
 

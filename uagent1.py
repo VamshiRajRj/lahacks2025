@@ -4,25 +4,9 @@ import uuid
 import requests
 import json
 from datetime import datetime
-from model import BillAnalysisRequest, BillAnalysisResponse, BillItem
+from model import BillAnalysisRequest, BillAnalysisResponse, BillItem, RequestA, RequestB, Response
 from typing import Dict
 import re
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 from config import ASI1_API_KEY
 
@@ -135,14 +119,10 @@ def parse_raw_to_bill_analysis_request(raw_text: str) -> BillAnalysisRequest:
 async def call_relevant_agent(ctx, input):
     # This function will be called to determine which agent to call based on the workflow state
     # For now, we will just return the second agent
-    print(f"Calling relevant agent with input: {input}")
     llm_response = await get_agent_address(input)
-    print(llm_response)
     parsed = json.loads(llm_response.replace("```json", "").replace("```", "").strip())
     agent_id = parsed["agent"]
     input_format = parsed["input_format"]
-    print(f"Agent ID :  {agent_id}")
-    print(f"Input Foramt ID :  {input_format}")
     if agent_id == "agent_1":
         await ctx.send(AGENTS[0][agent_id], BillAnalysisRequest(
         image_url=input_format.get("image_url", ""),
@@ -150,6 +130,11 @@ async def call_relevant_agent(ctx, input):
         request_id=input_format.get("request_id", ""),
         timestamp=input_format.get("timestamp", datetime.now())
     ))
+        return [AGENTS[0][agent_id], BillAnalysisRequest(
+        image_url=input_format.get("image_url", ""),
+        text_data=input_format.get("text_data", ""),
+        request_id=input_format.get("request_id", ""),
+        timestamp=input_format.get("timestamp", datetime.now()))]
     else:
         await ctx.send(AGENTS[0][agent_id], BillAnalysisResponse(request_id = input_format.get("request_id", ""),
     items= [BillItem(name= val.get("name", ""),
@@ -163,6 +148,18 @@ async def call_relevant_agent(ctx, input):
     status= input_format.get("status", "completed"),
     error= input_format.get("error", ""),
     metadata = input_format.get("metadata", {})))
+        return [AGENTS[0][agent_id], BillAnalysisResponse(request_id = input_format.get("request_id", ""),
+    items= [BillItem(name= val.get("name", ""),
+    price= val.get("price", 0.0),
+    quantity= val.get("quantity", 0),
+    total=val.get("total", 0.0)
+    ) for val in input_format.get("items", [])],
+    total_amount= input_format.get("total_amount", 0.0),
+    currency = input_format.get("currency", "USD"),
+    timestamp= input_format.get("timestamp", datetime.now()),
+    status= input_format.get("status", "completed"),
+    error= input_format.get("error", ""),
+    metadata = input_format.get("metadata", {}))]
 
 @my_first_agent.on_event('startup')
 async def startup_handler(ctx : Context):
@@ -172,15 +169,22 @@ async def startup_handler(ctx : Context):
     #     request_id=str(uuid.uuid4()),
     #     timestamp=datetime.now()
     # )
-    billRequest = "Vamshi and Prashanth went out to eat pizza, 20$. Vamshi Paid the bill"
-    #Call second_agent 
-    await call_relevant_agent(ctx, billRequest)
+    print("Agent started")
+    # billRequest = "Vamshi and Prashanth went out to eat pizza, 20$. Vamshi Paid the bill"
+    # #Call second_agent 
+    # await call_relevant_agent(ctx, billRequest)
     
 
+@my_first_agent.on_message(model = BillAnalysisRequest)
+async def message_request_handler(ctx: Context, sender : str, msg: BillAnalysisRequest):
+    #Call third_agent
+    print("Received message from agent 2")
+    await call_relevant_agent(ctx, msg)
 
 @my_first_agent.on_message(model = BillAnalysisResponse)
-async def message_handler(ctx: Context, sender : str, msg: BillAnalysisResponse):
+async def message_response_handler(ctx: Context, sender : str, msg: BillAnalysisResponse):
     #Call third_agent
+    print("Received message from agent 2")
     await call_relevant_agent(ctx, msg)
 
 

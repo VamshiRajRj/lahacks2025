@@ -10,6 +10,7 @@ from datetime import datetime
 import google.generativeai as genai
 from config import GEMINI_API_KEY
 
+
 genai.configure(api_key=GEMINI_API_KEY)
 
 my_second_agent = Agent(
@@ -17,6 +18,8 @@ my_second_agent = Agent(
     port = 5051,
     endpoint = ['http://localhost:5051/submit']
 )
+
+
 
 agent2_responses :  Dict[str, BillAnalysisResponse] = {}
 
@@ -181,7 +184,6 @@ async def message_handler(ctx: Context, sender : str, msg: BillAnalysisRequest):
                                 }
                         )
                 try:
-                    agent2_responses[msg.request_id] = response
                     # ctx.storage.set("agent2_responses", json(agent2_responses))
                     await ctx.send(sender, response)
                 except Exception as e:
